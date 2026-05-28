@@ -2,43 +2,44 @@ name: CD Workflow
 
 on:
   release:
-    types: [published]
+    [cite_start]types: [published]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy via SSH to VM
+        [cite_start]uses: appleboy/ssh-action@v1 [cite: 122]
         with:
-          host: course.prafdin.ru
-          port: 3162
-          username: kali
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          [cite_start]host: course.prafdin.ru [cite: 63]
+          [cite_start]username: kali [cite: 127]
+          [cite_start]port: 3162
+          [cite_start]key: ${{ secrets.SSH_PRIVATE_KEY }} [cite: 119]
           script: |
-            TARGET_DIR="/home/kali/catty-reminders-app"
-            BRANCH="lab2"
+            IMAGE="ghcr.io/alexchirkova/catty-reminders-app"
+            TAG="latest"
+            CONTAINER_NAME="catty-app"
             
-            echo "Переходим в директорию $TARGET_DIR..."
-            cd "$TARGET_DIR"
+            echo "1. Авторизация в GHCR на удаленном сервере..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            echo "Стягиваем последние изменения для ветки $BRANCH..."
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "origin/$BRANCH"
+            echo "2. Скачивание актуального Docker-образа..."
+            docker pull $IMAGE:$TAG
             
-            echo "Записываем хэш коммита в .env..."
-            echo "DEPLOY_REF=${{ github.sha }}" > "$TARGET_DIR/.env"
+            echo "3. Остановка старой службы systemctl..."
+            sudo systemctl stop catty-app 2>/dev/null || true
+            sudo systemctl disable catty-app 2>/dev/null || true
             
-            echo "Обновляем зависимости..."
-            source .venv/bin/activate
-            pip install -r requirements.txt
+            echo "4. Удаление старого контейнера..."
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm $CONTAINER_NAME 2>/dev/null || true
             
-            echo "Перезапускаем системную службу uvicorn..."
-            sudo systemctl restart catty-app
-            
-            echo "Развертывание успешно завершено!"
+            echo "5. Запуск приложения в Docker-контейнере..."
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 8181:8181 \
+              --restart always \
+              -e DEPLOY_REF="${{ github.sha }}" \
+              $IMAGE:$TAG
+              
+            echo "Деплой успешно завершен!"
