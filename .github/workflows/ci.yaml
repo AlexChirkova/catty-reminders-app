@@ -31,11 +31,11 @@ jobs:
       - name: Run tests
         run: |
           mkdir -p artifacts
-          python -m pytest tests/ | tee artifacts/test_report.txt
+          python -m pytest tests/ --junitxml=test_report.xml
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test_result
-          path: artifacts/test_report.txt
+          path: artifacts/test_report.xml
