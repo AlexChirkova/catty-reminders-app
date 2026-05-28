@@ -36,6 +36,7 @@ else
 fi
 
 echo "Перезапускаем сервис приложения..."
-sudo systemctl restart catty-app
+
+sudo -S systemctl restart catty-app <<< "kali"
 
 echo "Развертывание завершено успешно!"
