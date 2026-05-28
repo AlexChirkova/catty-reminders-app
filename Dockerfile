@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# hadolint ignore=DL3013
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 

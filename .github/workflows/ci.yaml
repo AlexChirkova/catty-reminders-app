@@ -14,6 +14,9 @@ on:
       - lab2_autotests*
       - lab3_autotests*
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   test:
     runs-on: ubuntu-latest
