@@ -1,0 +1,44 @@
+name: CD Workflow
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: course.prafdin.ru
+          port: 3162
+          username: kali
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            TARGET_DIR="/home/kali/catty-reminders-app"
+            BRANCH="lab2"
+            
+            echo "Переходим в директорию $TARGET_DIR..."
+            cd "$TARGET_DIR"
+            
+            echo "Стягиваем последние изменения для ветки $BRANCH..."
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            
+            echo "Записываем хэш коммита в .env..."
+            echo "DEPLOY_REF=${{ github.sha }}" > "$TARGET_DIR/.env"
+            
+            echo "Обновляем зависимости..."
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            
+            echo "Перезапускаем системную службу uvicorn..."
+            sudo systemctl restart catty-app
+            
+            echo "Развертывание успешно завершено!"
