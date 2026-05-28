@@ -2,19 +2,19 @@ name: CD Workflow
 
 on:
   release:
-    [cite_start]types: [published]
+    types: [published]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH to VM
-        [cite_start]uses: appleboy/ssh-action@v1 [cite: 122]
+        uses: appleboy/ssh-action@v1
         with:
-          [cite_start]host: course.prafdin.ru [cite: 63]
-          [cite_start]username: kali [cite: 127]
-          [cite_start]port: 3162
-          [cite_start]key: ${{ secrets.SSH_PRIVATE_KEY }} [cite: 119]
+          host: course.prafdin.ru
+          username: kali
+          port: 3162
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             IMAGE="ghcr.io/alexchirkova/catty-reminders-app"
             TAG="latest"
