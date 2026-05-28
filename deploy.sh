@@ -27,12 +27,15 @@ pip install -r requirements.txt
 echo "Устанавливаем браузеры Playwright..."
 playwright install
 
-echo "Перезапускаем системную службу uvicorn..."
+echo "Запускаем тесты перед деплоем..."
+if ./test.sh; then
+    echo "Тесты успешно пройдены."
+else
+    echo "Ошибка в тестах! Деплой отменён."
+    exit 1
+fi
+
+echo "Перезапускаем сервис приложения..."
 sudo systemctl restart catty-app
-
-sleep 5
-
-echo "Запускаем тесты..."
-./test.sh
 
 echo "Развертывание завершено успешно!"
