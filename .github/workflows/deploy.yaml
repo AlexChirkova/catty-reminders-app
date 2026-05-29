@@ -42,7 +42,6 @@ jobs:
               --name $CONTAINER_NAME \
               -p 8181:8181 \
               --restart always \
-              -e DEPLOY_REF="${{ github.sha }}" \
               $IMAGE:$TAG
               
             echo "Деплой успешно завершен!"
