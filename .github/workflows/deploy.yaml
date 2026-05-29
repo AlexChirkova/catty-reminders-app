@@ -18,6 +18,7 @@ jobs:
           username: kali
           port: 3162
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 30m
           script: |
             bash -c '
               set -e
