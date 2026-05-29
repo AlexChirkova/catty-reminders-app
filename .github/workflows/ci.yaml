@@ -3,15 +3,11 @@ name: CI Workflow
 on:
   push:
     branches:
-      - lab2
       - lab3
-      - lab2_autotests*
       - lab3_autotests*
   pull_request:
     branches:
-      - lab2
       - lab3
-      - lab2_autotests*
       - lab3_autotests*
 
 env:
