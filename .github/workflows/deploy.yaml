@@ -21,7 +21,7 @@ jobs:
           script: |
             bash -c '
               set -e
-              cd /home/ubu/catty-reminders-app
+              cd /home/kali/catty-reminders-app
               
               git fetch origin
               git checkout lab4
@@ -44,5 +44,5 @@ jobs:
               export HOST_APP_PORT=8181
               export CONTAINER_APP_PORT=8181
 
-              echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
               docker compose up -d --pull always --remove-orphans --force-recreate 
