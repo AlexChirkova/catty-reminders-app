@@ -5,91 +5,82 @@ on:
     branches:
       - lab2
       - lab3
+      - lab4
       - lab2_autotests*
       - lab3_autotests*
+      - lab4_autotests*
   pull_request:
     branches:
       - lab2
       - lab3
+      - lab4
       - lab2_autotests*
       - lab3_autotests*
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      - lab4_autotests*
 
 jobs:
-  tests:
+  docker-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Hadolint
+        run: docker run --rm -i hadolint/hadolint hadolint - < Dockerfile
 
+  pipeline:
+    needs: docker-lint
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:11.8.6-ubi9
+        env:
+          MARIADB_ROOT_PASSWORD: mypass
+          MARIADB_DATABASE: catty_reminders
+        ports: [ 3306:3306 ]
+
+    steps:
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+        with: { python-version: "3.12" }
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          python -m playwright install chromium --with-deps
-          
-      - name: Start FastAPI Application Server
+          pip install -r requirements.txt uvicorn pytest-playwright
+          playwright install --with-deps chromium
+
+      - name: Patch config for CI
+        run: sed -i 's/"host": "db"/"host": "127.0.0.1"/g' config.json
+
+      - name: Start app
         run: |
-          python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 &
-          sleep 5
+          nohup uvicorn app.main:app --host 127.0.0.1 --port 8181 &
+          sleep 10
 
       - name: Run tests
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-        run: |
-          pytest --junitxml=test_report.xml || true
+        env: { PYTHONPATH: "${{ github.workspace }}" }
+        run: pytest --junitxml=test_result.xml
 
-      - name: Upload test report
-        uses: actions/upload-artifact@v4
+      - name: Upload results
         if: always()
-        with:
-          name: test_result
-          path: test_report.xml
-
-  build-and-push:
-    needs: tests
+        uses: actions/upload-artifact@v4
+        with: { name: test_result, path: test_result.xml }
+    
+  docker-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    needs: pipeline
+    if: github.event_name == 'push'
+    permissions: { contents: read, packages: write }
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Lint Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
-        continue-on-error: true
-        with:
-          dockerfile: Dockerfile
-
-      - name: Log in to GitHub Container Registry (GHCR)
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
         uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/alexchirkova/catty-reminders-app
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=,suffix=,format=long
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GHCR_PAT }}" }
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/catty-reminders-app:latest
+            ghcr.io/${{ github.repository_owner }}/catty-reminders-app:${{ github.sha }}

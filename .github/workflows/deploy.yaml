@@ -19,30 +19,26 @@ jobs:
           port: 3162
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            IMAGE="ghcr.io/alexchirkova/catty-reminders-app"
-            TAG="latest"
-            CONTAINER_NAME="catty-app"
-            
-            echo "1. Авторизация в GHCR на удаленном сервере..."
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            echo "2. Скачивание актуального Docker-образа..."
-            docker pull $IMAGE:$TAG
-            
-            echo "3. Остановка старой службы systemctl..."
-            sudo systemctl stop catty-app 2>/dev/null || true
-            sudo systemctl disable catty-app 2>/dev/null || true
-            
-            echo "4. Удаление старого контейнера..."
-            docker stop $CONTAINER_NAME 2>/dev/null || true
-            docker rm $CONTAINER_NAME 2>/dev/null || true
-            
-            echo "5. Запуск приложения в Docker-контейнере..."
-            docker run -d \
-              --name $CONTAINER_NAME \
-              -p 8181:8181 \
-              --restart always \
-              -e DEPLOY_REF="${{ github.sha }}" \
-              $IMAGE:$TAG
+            bash -c '
+              set -e
+              cd /home/kali/catty-reminders-app
+              OWNER=$(echo "${{ github.repository_owner }}" | tr "[:upper:]" "[:lower:]")
               
-            echo "Деплой успешно завершен!"
+              export DEPLOY_REF=${{ github.sha }}
+              export IMAGE=ghcr.io/$OWNER/catty-reminders-app:${{ github.sha }}
+              
+              export DB_CONTAINER_NAME=catty-db
+              export APP_CONTAINER_NAME=catty-app
+              export MARIADB_ROOT_PASSWORD=mypass
+              export MARIADB_USER=kali
+              export MARIADB_PASSWORD=mypass
+              export MARIADB_DATABASE=catty_reminders
+              export HOST_DB_PORT=3306
+              export CONTEINER_DB_PORT=3306
+              export HOST_APP_PORT=8181
+              export CONTEINER_APP_PORT=8181
+
+              echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              docker compose up -d --pull always --remove-orphans --force-recreate 
+            '
+

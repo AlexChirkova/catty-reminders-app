@@ -1,14 +1,14 @@
-FROM python:3.10-slim
+FROM python:3.12
 
-WORKDIR /app
+WORKDIR /catty-reminders-app
 
 COPY requirements.txt .
 
-# hadolint ignore=DL3013
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY app/ ./app/
+COPY static/ ./static/
+COPY templates/ ./templates/
 
 EXPOSE 8181
 
