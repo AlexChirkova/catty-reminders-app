@@ -35,20 +35,22 @@ jobs:
         env:
           MARIADB_ROOT_PASSWORD: mypass
           MARIADB_DATABASE: catty_reminders
-        ports: [ 3306:3306 ]
-
+        ports:
+          - 3306:3306
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python
         uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-
+        with:
+          python-version: "3.12"
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt uvicorn pytest-playwright
           playwright install --with-deps chromium
-
+          
       - name: Patch config for CI
         run: sed -i 's/"host": "db"/"host": "127.0.0.1"/g' config.json
 
@@ -58,24 +60,34 @@ jobs:
           sleep 10
 
       - name: Run tests
-        env: { PYTHONPATH: "${{ github.workspace }}" }
+        env:
+          PYTHONPATH: "${{ github.workspace }}"
         run: pytest --junitxml=test_result.xml
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
-        with: { name: test_result, path: test_result.xml }
-    
+        with:
+          name: test_result
+          path: test_result.xml
+
   docker-build:
     runs-on: ubuntu-latest
     needs: pipeline
     if: github.event_name == 'push'
-    permissions: { contents: read, packages: write }
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+      
       - name: Login to GHCR
         uses: docker/login-action@v3
-        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GHCR_PAT }}" }
+        with:
+          registry: ghcr.io
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GHCR_PAT }}"
+          
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
