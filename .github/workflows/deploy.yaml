@@ -46,3 +46,4 @@ jobs:
 
               echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
               docker compose up -d --pull always --remove-orphans --force-recreate 
+            '
