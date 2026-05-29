@@ -34,8 +34,8 @@ jobs:
               export DB_CONTAINER_NAME=catty-db
               export APP_CONTAINER_NAME=catty-app
               
-              export MARIADB_ROOT_PASSWORD="${{ secrets.DB_ROOT_PASSWORD }}"
-              export MARIADB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+              export MARIADB_ROOT_PASSWORD=mypass
+              export MARIADB_PASSWORD=mypass
               
               export MARIADB_USER=kali
               export MARIADB_DATABASE=catty_reminders
